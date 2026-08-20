@@ -46,16 +46,16 @@ def random_search(
     weights_history = []
     cost_history = []
 
-    vanishing_steplength = False
+    diminishing_steplength = False
     if alpha is None:
-        vanishing_steplength = True
+        diminishing_steplength = True
 
     for k in range(1, max_iter + 1):
         # Record current position and its corresponding cost
         weights_history.append(w.copy())
         cost_history.append(fn(w))
 
-        if vanishing_steplength:
+        if diminishing_steplength:
             alpha = 1 / k
 
         N = np.size(w)
@@ -113,16 +113,16 @@ def coordinate_search(
     weights_history = []
     cost_history = []
 
-    vanishing_steplength = False
+    diminishing_steplength = False
     if alpha is None:
-        vanishing_steplength = True
+        diminishing_steplength = True
 
     for k in range(1, max_iter + 1):
         # Record current position and its corresponding cost
         weights_history.append(w.copy())
         cost_history.append(fn(w))
 
-        if vanishing_steplength:
+        if diminishing_steplength:
             alpha = 1 / k
 
         # Generate candidate points along coordinate directions
@@ -171,16 +171,16 @@ def coordinate_descent(
     weights_history = []
     cost_history = []
 
-    vanishing_steplength = False
+    diminishing_steplength = False
     if alpha is None:
-        vanishing_steplength = True
+        diminishing_steplength = True
 
     for k in range(1, max_iter + 1):
         # Record current position and its corresponding cost
         weights_history.append(w.copy())
         cost_history.append(fn(w))
 
-        if vanishing_steplength:
+        if diminishing_steplength:
             alpha = 1 / k
 
         # Sequentially optimize each coordinate axis
