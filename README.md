@@ -11,8 +11,7 @@ The primary goal of this project is to build core ML models and optimizers from 
 ```text
 machine-learning/
 ├── optimizations/
-│   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search)
-├── practice.ipynb               # Interactive experiments and visualization notebook
+│   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search, Coordinate Descent)
 ├── pyproject.toml               # Project dependencies and packaging configuration
 ├── uv.lock                      # Lockfile for reproducible environment setup
 └── README.md
@@ -31,8 +30,11 @@ Implemented in [`optimizations/zero_order.py`](optimizations/zero_order.py):
   - Candidate steps are scaled by learning rate $\alpha$ and accepted greedily if they decrease the objective cost.
   - Supports constant or diminishing step length rules ($\alpha = 1 / k$).
 - **Coordinate Search**:
-  - Evaluates candidate steps along the standard positive and negative coordinate axes ($\pm e_1, \pm e_2, \dots, \pm e_N$).
-  - Greedily updates to the coordinate step that yields the lowest objective value.
+  - Evaluates candidate steps simultaneously along all standard positive and negative coordinate axes ($\pm e_1, \pm e_2, \dots, \pm e_N$).
+  - Greedily takes the single step that yields the greatest cost reduction.
+  - Supports constant or diminishing step length rules ($\alpha = 1 / k$).
+- **Coordinate Descent**:
+  - Sequentially sweeps through each coordinate axis ($1, 2, \dots, N$) and immediately updates the position after each axis evaluation if improved.
   - Supports constant or diminishing step length rules ($\alpha = 1 / k$).
 
 ---
@@ -72,7 +74,7 @@ pip install -e .
 
 ```python
 import numpy as np
-from optimizations.zero_order import random_search, coordinate_search
+from optimizations.zero_order import random_search, coordinate_search, coordinate_descent
 
 # Define an objective function to minimize
 def objective_fn(w: np.ndarray) -> np.float64:
@@ -85,9 +87,9 @@ w_init = np.array([2.0, 2.0])
 rs_weights, rs_costs = random_search(
     fn=objective_fn,
     w=w_init,
-    alpha=1.0,          # Step size
     max_iter=10,        # Number of iterations
-    num_samples=1000    # Directions sampled per iteration
+    num_samples=1000,   # Directions sampled per iteration
+    alpha=1.0           # Step size (or None for diminishing alpha = 1/k)
 )
 
 print(f"Random Search - Optimal weights: {rs_weights[-1]}, Min cost: {rs_costs[-1]}")
@@ -96,11 +98,21 @@ print(f"Random Search - Optimal weights: {rs_weights[-1]}, Min cost: {rs_costs[-
 cs_weights, cs_costs = coordinate_search(
     fn=objective_fn,
     w=w_init,
-    alpha=0.5,          # Step size along coordinate axes
-    max_iter=10         # Number of iterations
+    max_iter=10,        # Number of iterations
+    alpha=0.5           # Step size along coordinate axes
 )
 
 print(f"Coordinate Search - Optimal weights: {cs_weights[-1]}, Min cost: {cs_costs[-1]}")
+
+# 3. Run Coordinate Descent
+cd_weights, cd_costs = coordinate_descent(
+    fn=objective_fn,
+    w=w_init,
+    max_iter=10,        # Number of full coordinate sweeps
+    alpha=0.5           # Step size along coordinate axes
+)
+
+print(f"Coordinate Descent - Optimal weights: {cd_weights[-1]}, Min cost: {cd_costs[-1]}")
 ```
 
 ---
@@ -110,7 +122,7 @@ print(f"Coordinate Search - Optimal weights: {cs_weights[-1]}, Min cost: {cs_cos
 - [x] **Zero-Order Optimization**
   - [x] Random Search
   - [x] Coordinate Search
-  - [ ] Coordinate Descent
+  - [x] Coordinate Descent
 - [ ] **First-Order Optimization**
   - [ ] Gradient Descent (Batch, Mini-batch, Stochastic)
   - [ ] Momentum & Nesterov Accelerated Gradient
