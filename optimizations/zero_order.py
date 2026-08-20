@@ -79,10 +79,11 @@ def random_search(
 
 
 def coordinate_search(
-        obj_fn: Callable[[np.ndarray], np.float64],
+        fn: Callable[[np.ndarray], np.float64],
         w: np.ndarray,
-        max_iter: int,
         alpha: float,
+        max_iter: int,
+        diminishing_steplength: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Minimizes an objective function using coordinate search optimization.
 
@@ -91,14 +92,16 @@ def coordinate_search(
     and greedily updates the current position if a candidate yields a lower cost.
 
     Args:
-        obj_fn: Objective function to minimize, mapping a weight vector to a scalar value.
+        fn: Objective function to minimize, mapping a weight vector to a scalar value.
         w: Initial weight vector (starting point).
+        alpha: Step length / learning rate multiplier.
         max_iter: Maximum number of iterations to run.
-        alpha: Step length.
+        diminishing_steplength: Whether to use a diminishing step size rule
+            (setting alpha = 1 / k at iteration k). Defaults to False.
 
     Returns:
         tuple[np.ndarray, np.ndarray]:
-            - weight_history: Array of visited weight vectors at each step (shape: (max_iter + 1, N)).
+            - weights_history: Array of visited weight vectors at each step (shape: (max_iter + 1, N)).
             - cost_history: Array of function evaluations at each step (shape: (max_iter + 1,)).
     """
     # Construct standard coordinate basis directions (+/- unit basis vectors)
@@ -106,17 +109,20 @@ def coordinate_search(
     directions_minus = -np.eye(np.size(w), np.size(w))
     directions = np.concatenate((directions_plus, directions_minus), axis=0)
 
-    weight_history = []
+    weights_history = []
     cost_history = []
 
     for k in range(1, max_iter + 1):
         # Record current position and its corresponding cost
-        weight_history.append(w)
-        cost_history.append(obj_fn(w))
+        weights_history.append(w)
+        cost_history.append(fn(w))
+
+        if diminishing_steplength:
+            alpha = 1 / k
 
         # Generate candidate points along coordinate directions
         w_candidates = w + alpha * directions
-        evals = np.array([obj_fn(w_eval) for w_eval in w_candidates])
+        evals = np.array([fn(w_eval) for w_eval in w_candidates])
         min_idx = np.argmin(evals)
 
         # Greedy update: step only if the best candidate improves the cost
@@ -124,7 +130,7 @@ def coordinate_search(
             w = w_candidates[min_idx]
 
     # Record final position and cost
-    weight_history.append(w)
-    cost_history.append(obj_fn(w))
+    weights_history.append(w)
+    cost_history.append(fn(w))
 
-    return np.array(weight_history), np.array(cost_history)
+    return np.array(weights_history), np.array(cost_history)
