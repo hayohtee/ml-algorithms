@@ -13,7 +13,7 @@ def random_search(
     alpha: float,
     max_iter: int,
     num_samples: int,
-    diminishing_gradient: bool = False,
+    diminishing_steplength: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Minimizes an objective function using random search optimization.
 
@@ -27,7 +27,7 @@ def random_search(
         alpha: Step length / learning rate multiplier.
         max_iter: Maximum number of iterations to run.
         num_samples: Number of random candidate directions sampled per iteration.
-        diminishing_gradient: Whether to use a diminishing step size rule
+        diminishing_steplength: Whether to use a diminishing step size rule
             (setting alpha = 1 / k at iteration k). Defaults to False.
 
     Returns:
@@ -43,7 +43,7 @@ def random_search(
         weights_history.append(w)
         cost_history.append(fn(w))
 
-        if diminishing_gradient:
+        if diminishing_steplength:
             alpha = 1 / k
 
         N = np.size(w)
