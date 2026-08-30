@@ -1,16 +1,17 @@
 # Machine Learning from Scratch
 
-A clean, educational repository dedicated to implementing machine learning algorithms and mathematical optimization techniques from scratch using Python and NumPy.
+A clean, educational repository dedicated to implementing machine learning algorithms and mathematical optimization techniques from scratch using Python, NumPy, and Autograd.
 
 The primary goal of this project is to build core ML models and optimizers from first principles to deeply understand their mathematical mechanics, convergence behaviors, and algorithmic details without relying on high-level framework abstractions.
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 machine-learning/
 ├── optimizations/
+│   ├── first_order.py           # First-order optimization (Gradient Descent)
 │   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search, Coordinate Descent)
 ├── pyproject.toml               # Project dependencies and packaging configuration
 ├── uv.lock                      # Lockfile for reproducible environment setup
@@ -19,7 +20,7 @@ machine-learning/
 
 ---
 
-## 🚀 Implemented Algorithms
+## Implemented Algorithms
 
 ### Optimization
 
@@ -37,9 +38,15 @@ Implemented in [`optimizations/zero_order.py`](optimizations/zero_order.py):
   - Sequentially sweeps through each coordinate axis ($1, 2, \dots, N$) and immediately updates the position after each axis evaluation if improved.
   - Supports constant or diminishing step length rules ($\alpha = 1 / k$).
 
+#### First-Order Optimization (Gradient-Based)
+Implemented in [`optimizations/first_order.py`](optimizations/first_order.py):
+- **Gradient Descent**:
+  - Leverages automatic differentiation via `autograd` to compute exact first-order gradients.
+  - Iteratively updates parameter weights in the direction of steepest descent (negative gradient) scaled by learning rate $\alpha$.
+
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python `>= 3.14`
@@ -68,7 +75,7 @@ pip install -e .
 
 ---
 
-## 💡 Quick Usage Example
+## Quick Usage Example
 
 ### Running Zero-Order Optimizers
 
@@ -115,16 +122,40 @@ cd_weights, cd_costs = coordinate_descent(
 print(f"Coordinate Descent - Optimal weights: {cd_weights[-1]}, Min cost: {cd_costs[-1]}")
 ```
 
+### Running First-Order Optimizers
+
+```python
+import autograd.numpy as anp
+from optimizations.first_order import gradient_descent
+
+# Define an autograd-compatible objective function
+def objective_fn(w: anp.ndarray):
+    return anp.tanh(4 * w[0] + 4 * w[1]) + anp.maximum(0.4 * w[1]**2, 1.0) + 1.0
+
+# Initial weight vector
+w_init = anp.array([2.0, 2.0])
+
+# Run Gradient Descent
+gd_weights, gd_costs = gradient_descent(
+    fn=objective_fn,
+    w=w_init,
+    max_iter=50,        # Number of iterations
+    alpha=0.1           # Step size / learning rate
+)
+
+print(f"Gradient Descent - Optimal weights: {gd_weights[-1]}, Min cost: {gd_costs[-1]}")
+```
+
 ---
 
-## 🗺️ Roadmap / Planned Implementations
+## Roadmap / Planned Implementations
 
 - [x] **Zero-Order Optimization**
   - [x] Random Search
   - [x] Coordinate Search
   - [x] Coordinate Descent
 - [ ] **First-Order Optimization**
-  - [ ] Gradient Descent (Batch, Mini-batch, Stochastic)
+  - [x] Gradient Descent
   - [ ] Momentum & Nesterov Accelerated Gradient
   - [ ] AdaGrad, RMSprop, Adam
 - [ ] **Second-Order Optimization**
@@ -144,6 +175,6 @@ print(f"Coordinate Descent - Optimal weights: {cd_weights[-1]}, Min cost: {cd_co
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License.
