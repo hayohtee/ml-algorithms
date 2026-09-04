@@ -11,7 +11,7 @@ The primary goal of this project is to build core ML models and optimizers from 
 ```text
 machine-learning/
 ├── optimizations/
-│   ├── first_order.py           # First-order optimization (Gradient Descent, Momentum)
+│   ├── first_order.py           # First-order optimization (Gradient Descent, Momentum, Normalized GD, Component-Wise Normalized GD)
 │   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search, Coordinate Descent)
 ├── pyproject.toml               # Project dependencies and packaging configuration
 ├── uv.lock                      # Lockfile for reproducible environment setup
@@ -47,6 +47,14 @@ Implemented in [`optimizations/first_order.py`](optimizations/first_order.py):
 - **Momentum**:
   - Accelerates gradient descent by incorporating an exponentially decaying moving average of past gradients with decay parameter $\beta$.
   - Dampens oscillations in steep directions and accelerates progress along flat, consistent descent directions.
+- **Normalized Gradient Descent**:
+  - Normalizes the gradient vector by its Euclidean ($L_2$) norm with a numerical stability term $\epsilon$:
+    $$\mathbf{w}_k = \mathbf{w}_{k-1} - \alpha \frac{\nabla f(\mathbf{w}_{k-1})}{\|\nabla f(\mathbf{w}_{k-1})\|_2 + \epsilon}$$
+  - Decouples step length from gradient magnitude, ensuring a consistent step size $\alpha$ across steep valleys and flat plateaus.
+- **Component-Wise Normalized Gradient Descent**:
+  - Normalizes each coordinate of the gradient vector independently by its sign / absolute value with a safety threshold $\varepsilon$:
+    $$d_i = \begin{cases} \text{sign}(\nabla f(\mathbf{w})_i), & \text{if } |\nabla f(\mathbf{w})_i| > \varepsilon \\ 0, & \text{otherwise} \end{cases}, \quad \mathbf{w}_k = \mathbf{w}_{k-1} - \alpha \cdot \mathbf{d}$$
+  - Moves along the vertices of an $L_\infty$ unit ball, ensuring equal step lengths along all active dimensions.
 
 ---
 
@@ -130,7 +138,12 @@ print(f"Coordinate Descent - Optimal weights: {cd_weights[-1]}, Min cost: {cd_co
 
 ```python
 import autograd.numpy as anp
-from optimizations.first_order import gradient_descent, momentum
+from optimizations.first_order import (
+    gradient_descent,
+    momentum,
+    normalized_gradient_descent,
+    component_wise,
+)
 
 # Define an autograd-compatible objective function
 def objective_fn(w: anp.ndarray):
@@ -159,6 +172,27 @@ mom_weights, mom_costs = momentum(
 )
 
 print(f"Momentum - Optimal weights: {mom_weights[-1]}, Min cost: {mom_costs[-1]}")
+
+# 3. Run Normalized Gradient Descent
+ngd_weights, ngd_costs = normalized_gradient_descent(
+    fn=objective_fn,
+    w=w_init,
+    max_iter=50,        # Number of iterations
+    alpha=0.1           # Step size
+)
+
+print(f"Normalized GD - Optimal weights: {ngd_weights[-1]}, Min cost: {ngd_costs[-1]}")
+
+# 4. Run Component-Wise Normalized Gradient Descent
+cw_weights, cw_costs = component_wise(
+    fn=objective_fn,
+    w=w_init,
+    max_iter=50,        # Number of iterations
+    alpha=0.1,          # Step size along each coordinate
+    eps=1e-8            # Safety threshold
+)
+
+print(f"Component-Wise Normalized GD - Optimal weights: {cw_weights[-1]}, Min cost: {cw_costs[-1]}")
 ```
 
 ---
@@ -169,10 +203,11 @@ print(f"Momentum - Optimal weights: {mom_weights[-1]}, Min cost: {mom_costs[-1]}
   - [x] Random Search
   - [x] Coordinate Search
   - [x] Coordinate Descent
-- [ ] **First-Order Optimization**
+- [x] **First-Order Optimization**
   - [x] Gradient Descent
   - [x] Momentum
-  - [ ] Normalized Gradient Descent
+  - [x] Normalized Gradient Descent
+  - [x] Component-Wise Normalized Gradient Descent
 - [ ] **Second-Order Optimization**
   - [ ] Newton's Method
   - [ ] Quasi-Newton Methods (BFGS / L-BFGS)
