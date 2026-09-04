@@ -48,12 +48,10 @@ Implemented in [`optimizations/first_order.py`](optimizations/first_order.py):
   - Accelerates gradient descent by incorporating an exponentially decaying moving average of past gradients with decay parameter $\beta$.
   - Dampens oscillations in steep directions and accelerates progress along flat, consistent descent directions.
 - **Normalized Gradient Descent**:
-  - Normalizes the gradient vector by its Euclidean ($L_2$) norm with a numerical stability term $\epsilon$:
-    $$\mathbf{w}_k = \mathbf{w}_{k-1} - \alpha \frac{\nabla f(\mathbf{w}_{k-1})}{\|\nabla f(\mathbf{w}_{k-1})\|_2 + \epsilon}$$
+  - Normalizes the gradient vector by its Euclidean ($L_2$) norm with a numerical stability term $\epsilon$  
   - Decouples step length from gradient magnitude, ensuring a consistent step size $\alpha$ across steep valleys and flat plateaus.
 - **Component-Wise Normalized Gradient Descent**:
-  - Normalizes each coordinate of the gradient vector independently by its sign / absolute value with a safety threshold $\varepsilon$:
-    $$d_i = \begin{cases} \text{sign}(\nabla f(\mathbf{w})_i), & \text{if } |\nabla f(\mathbf{w})_i| > \varepsilon \\ 0, & \text{otherwise} \end{cases}, \quad \mathbf{w}_k = \mathbf{w}_{k-1} - \alpha \cdot \mathbf{d}$$
+  - Normalizes each coordinate of the gradient vector independently by its sign / absolute value with a safety threshold $\varepsilon$
   - Moves along the vertices of an $L_\infty$ unit ball, ensuring equal step lengths along all active dimensions.
 
 ---
