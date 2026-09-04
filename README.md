@@ -43,6 +43,7 @@ Implemented in [`optimizations/first_order.py`](optimizations/first_order.py):
 - **Gradient Descent**:
   - Leverages automatic differentiation via `autograd` to compute exact first-order gradients.
   - Iteratively updates parameter weights in the direction of steepest descent (negative gradient) scaled by learning rate $\alpha$.
+  - Supports constant or diminishing step length rules ($\alpha = 1 / k$).
 
 ---
 
@@ -140,7 +141,7 @@ gd_weights, gd_costs = gradient_descent(
     fn=objective_fn,
     w=w_init,
     max_iter=50,        # Number of iterations
-    alpha=0.1           # Step size / learning rate
+    alpha=0.1           # Step size / learning rate (or None for diminishing alpha = 1/k)
 )
 
 print(f"Gradient Descent - Optimal weights: {gd_weights[-1]}, Min cost: {gd_costs[-1]}")
