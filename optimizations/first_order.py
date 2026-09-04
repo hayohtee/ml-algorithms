@@ -7,12 +7,14 @@ Algorithms:
     - Gradient Descent: Iteratively steps in the direction of steepest descent (opposite to the gradient).
     - Momentum: Accelerates gradient descent by incorporating an exponential moving average of past gradients.
     - Normalized Gradient Descent: Normalizes the gradient to unit length to maintain a fixed step size regardless of gradient magnitude.
+    - Component-Wise Normalized Gradient Descent: Normalizes each gradient component independently by its absolute value (sign).
 """
 
 from collections.abc import Callable
 
 import numpy as np
 from autograd import grad, value_and_grad
+from autograd.numpy import where
 from numpy.linalg import norm
 
 
@@ -168,6 +170,60 @@ def normalized_gradient_descent(
 
         # Step in the normalized direction of steepest descent (unit negative gradient)
         w = w - alpha * (grad_eval / (norm(grad_eval) + e))
+
+        # Record updated position and its corresponding cost
+        weights_history.append(w.copy())
+        cost_history.append(fn(w))
+
+    return np.array(weights_history), np.array(cost_history)
+
+
+def component_wise(
+        fn: Callable[[np.ndarray], np.float64],
+        w: np.ndarray,
+        max_iter: int,
+        alpha: float,
+        eps: float = 1e-8
+) -> tuple[np.ndarray, np.ndarray]:
+    """Minimizes an objective function using component-wise normalized gradient descent.
+
+    Unlike standard normalized gradient descent which normalizes the full gradient vector
+    by its Euclidean (L2) norm, component-wise normalization divides each coordinate of the
+    gradient by its absolute value (its sign). This ensures that every coordinate moves by
+    a fixed step length `alpha`, effectively optimizing within an L-infinity ball and taking
+    equal step sizes along each dimension.
+
+    Args:
+        fn: Objective function to minimize, mapping a weight vector to a scalar value.
+            Must be compatible with `autograd`.
+        w: Initial weight vector (starting point).
+        max_iter: Maximum number of optimization iterations to run.
+        alpha: Step length / learning rate multiplier.
+        eps: Safety threshold. Components with absolute gradient less than or equal to
+            `eps` are treated as zero to prevent division by zero and noise near stationary
+            points. Defaults to 1e-8.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - weights_history: Array of visited weight vectors at each step (shape: (max_iter + 1, N)).
+            - cost_history: Array of function evaluations at each step (shape: (max_iter + 1,)).
+    """
+    # Compute the gradient function via automatic differentiation
+    gradient = grad(fn)
+
+    # Record initial position and its corresponding cost
+    weights_history = [w.copy()]
+    cost_history = [fn(w)]
+
+    for k in range(max_iter):
+        # Evaluate the gradient at the current position
+        grad_eval = gradient(w)
+
+        # Normalize each coordinate by its sign; zero out components below safety threshold
+        coord_norm = np.where(np.abs(grad_eval) > eps, np.sign(grad_eval), 0.0)
+
+        # Step in the component-wise normalized descent direction
+        w = w - alpha * coord_norm
 
         # Record updated position and its corresponding cost
         weights_history.append(w.copy())
