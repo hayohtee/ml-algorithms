@@ -11,7 +11,7 @@ The primary goal of this project is to build core ML models and optimizers from 
 ```text
 machine-learning/
 ├── optimizations/
-│   ├── first_order.py           # First-order optimization (Gradient Descent)
+│   ├── first_order.py           # First-order optimization (Gradient Descent, Momentum)
 │   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search, Coordinate Descent)
 ├── pyproject.toml               # Project dependencies and packaging configuration
 ├── uv.lock                      # Lockfile for reproducible environment setup
@@ -44,6 +44,9 @@ Implemented in [`optimizations/first_order.py`](optimizations/first_order.py):
   - Leverages automatic differentiation via `autograd` to compute exact first-order gradients.
   - Iteratively updates parameter weights in the direction of steepest descent (negative gradient) scaled by learning rate $\alpha$.
   - Supports constant or diminishing step length rules ($\alpha = 1 / k$).
+- **Momentum**:
+  - Accelerates gradient descent by incorporating an exponentially decaying moving average of past gradients with decay parameter $\beta$.
+  - Dampens oscillations in steep directions and accelerates progress along flat, consistent descent directions.
 
 ---
 
@@ -127,7 +130,7 @@ print(f"Coordinate Descent - Optimal weights: {cd_weights[-1]}, Min cost: {cd_co
 
 ```python
 import autograd.numpy as anp
-from optimizations.first_order import gradient_descent
+from optimizations.first_order import gradient_descent, momentum
 
 # Define an autograd-compatible objective function
 def objective_fn(w: anp.ndarray):
@@ -136,7 +139,7 @@ def objective_fn(w: anp.ndarray):
 # Initial weight vector
 w_init = anp.array([2.0, 2.0])
 
-# Run Gradient Descent
+# 1. Run Gradient Descent
 gd_weights, gd_costs = gradient_descent(
     fn=objective_fn,
     w=w_init,
@@ -145,6 +148,17 @@ gd_weights, gd_costs = gradient_descent(
 )
 
 print(f"Gradient Descent - Optimal weights: {gd_weights[-1]}, Min cost: {gd_costs[-1]}")
+
+# 2. Run Momentum-Accelerated Gradient Descent
+mom_weights, mom_costs = momentum(
+    fn=objective_fn,
+    w=w_init,
+    max_iter=50,        # Number of iterations
+    beta=0.9,           # Momentum decay rate
+    alpha=0.1           # Step size / learning rate
+)
+
+print(f"Momentum - Optimal weights: {mom_weights[-1]}, Min cost: {mom_costs[-1]}")
 ```
 
 ---
@@ -157,8 +171,8 @@ print(f"Gradient Descent - Optimal weights: {gd_weights[-1]}, Min cost: {gd_cost
   - [x] Coordinate Descent
 - [ ] **First-Order Optimization**
   - [x] Gradient Descent
-  - [ ] Momentum & Nesterov Accelerated Gradient
-  - [ ] AdaGrad, RMSprop, Adam
+  - [x] Momentum
+  - [ ] Normalized Gradient Descent
 - [ ] **Second-Order Optimization**
   - [ ] Newton's Method
   - [ ] Quasi-Newton Methods (BFGS / L-BFGS)
