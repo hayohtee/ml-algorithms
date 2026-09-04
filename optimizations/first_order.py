@@ -6,13 +6,14 @@ gradient information (first derivatives) to iteratively find the minimum of an o
 Algorithms:
     - Gradient Descent: Iteratively steps in the direction of steepest descent (opposite to the gradient).
     - Momentum: Accelerates gradient descent by incorporating an exponential moving average of past gradients.
+    - Normalized Gradient Descent: Normalizes the gradient to unit length to maintain a fixed step size regardless of gradient magnitude.
 """
 
 from collections.abc import Callable
 
-from autograd import grad
-from autograd import value_and_grad
 import numpy as np
+from autograd import grad, value_and_grad
+from numpy.linalg import norm
 
 
 def gradient_descent(
@@ -119,5 +120,57 @@ def momentum(
 
         # Update momentum direction for the next step via exponential moving average
         d = (beta * d) + (1 - beta) * grad_eval
+
+    return np.array(weights_history), np.array(cost_history)
+
+
+def normalized_gradient_descent(
+        fn: Callable[[np.ndarray], np.float64],
+        w: np.ndarray,
+        max_iter: int,
+        alpha: float,
+        e: float = 1e-8
+) -> tuple[np.ndarray, np.ndarray]:
+    """Minimizes an objective function using normalized gradient descent optimization.
+
+    At each iteration, computes the gradient of the objective function evaluated at the
+    current parameter vector using automatic differentiation (`autograd.grad`), normalizes
+    it by its Euclidean (L2) norm, and updates the parameters by stepping in the direction
+    of the unit negative gradient scaled by the step length `alpha`.
+
+    Normalizing the gradient decouples the step size from the gradient magnitude, ensuring
+    a consistent step size of `alpha` regardless of how steep or flat the objective surface is.
+
+    Args:
+        fn: Objective function to minimize, mapping a weight vector to a scalar value.
+            Must be compatible with `autograd`.
+        w: Initial weight vector (starting point).
+        max_iter: Maximum number of optimization iterations to run.
+        alpha: Step length / learning rate multiplier.
+        e: Small positive constant (epsilon) added to the norm denominator for numerical
+            stability to prevent division by zero. Defaults to 1e-8.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]:
+            - weights_history: Array of visited weight vectors at each step (shape: (max_iter + 1, N)).
+            - cost_history: Array of function evaluations at each step (shape: (max_iter + 1,)).
+    """
+    # Compute the gradient function via automatic differentiation
+    gradient = grad(fn)
+
+    # Record initial position and its corresponding cost
+    weights_history = [w.copy()]
+    cost_history = [fn(w)]
+
+    for k in range(max_iter):
+        # Evaluate the gradient at the current position
+        grad_eval = gradient(w)
+
+        # Step in the normalized direction of steepest descent (unit negative gradient)
+        w = w - alpha * (grad_eval / (norm(grad_eval) + e))
+
+        # Record updated position and its corresponding cost
+        weights_history.append(w.copy())
+        cost_history.append(fn(w))
 
     return np.array(weights_history), np.array(cost_history)
