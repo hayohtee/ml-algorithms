@@ -14,10 +14,10 @@ import numpy as np
 
 
 def gradient_descent(
-    fn: Callable[[np.ndarray], np.float64], 
-    w: np.ndarray, 
-    max_iter: int, 
-    alpha: float,
+        fn: Callable[[np.ndarray], np.float64],
+        w: np.ndarray,
+        max_iter: int,
+        alpha: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Minimizes an objective function using gradient descent optimization.
 
@@ -30,7 +30,8 @@ def gradient_descent(
             Must be compatible with `autograd`.
         w: Initial weight vector (starting point).
         max_iter: Maximum number of optimization iterations to run.
-        alpha: Step length / learning rate multiplier.
+        alpha: Step length / learning rate multiplier. If None, uses a diminishing step
+            length rule (setting alpha = 1 / k at iteration k). Defaults to None.
 
     Returns:
         tuple[np.ndarray, np.ndarray]:
@@ -40,11 +41,18 @@ def gradient_descent(
     # Compute the gradient function via automatic differentiation
     gradient = grad(fn)
 
+    diminishing_steplength = False
+    if alpha is None:
+        diminishing_steplength = True
+
     # Record initial position and its corresponding cost
-    weights_history = [w]
+    weights_history = [w.copy()]
     cost_history = [fn(w)]
-    
-    for k in range(max_iter):
+
+    for k in range(1, max_iter + 1):
+        if diminishing_steplength:
+            alpha = 1 / k
+
         # Evaluate the gradient at the current position
         grad_eval = gradient(w)
 
@@ -52,7 +60,7 @@ def gradient_descent(
         w = w - alpha * grad_eval
 
         # Record updated position and its corresponding cost
-        weights_history.append(w)
+        weights_history.append(w.copy())
         cost_history.append(fn(w))
 
     return np.array(weights_history), np.array(cost_history)
