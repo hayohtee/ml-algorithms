@@ -12,6 +12,7 @@ The primary goal of this project is to build core ML models and optimizers from 
 machine-learning/
 ├── optimizations/
 │   ├── first_order.py           # First-order optimization (Gradient Descent, Momentum, Normalized GD, Component-Wise Normalized GD)
+│   ├── second_order.py          # Second-order optimization (Newton's Method)
 │   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search, Coordinate Descent)
 ├── pyproject.toml               # Project dependencies and packaging configuration
 ├── uv.lock                      # Lockfile for reproducible environment setup
@@ -53,6 +54,13 @@ Implemented in [`optimizations/first_order.py`](optimizations/first_order.py):
 - **Component-Wise Normalized Gradient Descent**:
   - Normalizes each coordinate of the gradient vector independently by its sign / absolute value with a safety threshold $\varepsilon$
   - Moves along the vertices of an $L_\infty$ unit ball, ensuring equal step lengths along all active dimensions.
+
+#### Second-Order Optimization (Hessian-Based)
+Implemented in [`optimizations/second_order.py`](optimizations/second_order.py):
+- **Newton's Method**:
+  - Leverages curvature information using automatic differentiation via `autograd.grad` and `autograd.hessian` to fit a second-order Taylor series quadratic approximation.
+  - Adds diagonal regularization $\epsilon I$ (damping) to guarantee positive-definiteness, invertibility, and numerical stability of the Hessian matrix.
+  - Solves the linear system $(H + \epsilon I) w_{k+1} = (H + \epsilon I) w_k - \nabla f(w_k)$ to take curvature-adjusted descent steps.
 
 ---
 
@@ -193,6 +201,30 @@ cw_weights, cw_costs = component_wise(
 print(f"Component-Wise Normalized GD - Optimal weights: {cw_weights[-1]}, Min cost: {cw_costs[-1]}")
 ```
 
+### Running Second-Order Optimizers
+
+```python
+import autograd.numpy as anp
+from optimizations.second_order import newtons_method
+
+# Define an autograd-compatible objective function
+def objective_fn(w: anp.ndarray):
+    return (w[0] - 2.0)**2 + (w[1] + 3.0)**2
+
+# Initial weight vector
+w_init = anp.array([0.0, 0.0])
+
+# Run Newton's Method
+newton_weights, newton_costs = newtons_method(
+    fn=objective_fn,
+    w=w_init,
+    max_iter=10,        # Number of iterations
+    eps=1e-8            # Hessian diagonal regularization
+)
+
+print(f"Newton's Method - Optimal weights: {newton_weights[-1]}, Min cost: {newton_costs[-1]}")
+```
+
 ---
 
 ## Roadmap / Planned Implementations
@@ -207,7 +239,7 @@ print(f"Component-Wise Normalized GD - Optimal weights: {cw_weights[-1]}, Min co
   - [x] Normalized Gradient Descent
   - [x] Component-Wise Normalized Gradient Descent
 - [ ] **Second-Order Optimization**
-  - [ ] Newton's Method
+  - [x] Newton's Method
   - [ ] Quasi-Newton Methods (BFGS / L-BFGS)
 - [ ] **Supervised Learning**
   - [ ] Linear Regression (Analytical & Gradient Descent)
