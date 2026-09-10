@@ -14,6 +14,8 @@ machine-learning/
 │   ├── first_order.py           # First-order optimization (Gradient Descent, Momentum, Normalized GD, Component-Wise Normalized GD)
 │   ├── second_order.py          # Second-order optimization (Newton's Method)
 │   └── zero_order.py            # Zero-order optimization (Random Search, Coordinate Search, Coordinate Descent)
+├── supervised/
+│   ├── linear_regression.py     # Linear Regression (Gradient Descent, Newton's Method)
 ├── pyproject.toml               # Project dependencies and packaging configuration
 ├── uv.lock                      # Lockfile for reproducible environment setup
 └── README.md
@@ -61,6 +63,18 @@ Implemented in [`optimizations/second_order.py`](optimizations/second_order.py):
   - Leverages curvature information using automatic differentiation via `autograd.grad` and `autograd.hessian` to fit a second-order Taylor series quadratic approximation.
   - Adds diagonal regularization $\epsilon I$ (damping) to guarantee positive-definiteness, invertibility, and numerical stability of the Hessian matrix.
   - Solves the linear system $(H + \epsilon I) w_{k+1} = (H + \epsilon I) w_k - \nabla f(w_k)$ to take curvature-adjusted descent steps.
+
+### Supervised Learning
+
+#### Linear Models
+Implemented in [`supervised/linear_regression.py`](supervised/linear_regression.py):
+- **Linear Regression**:
+  - Models the relationship between input features $X$ and continuous target $y$ via affine transformation: $\hat{y} = w_0 + X w_{1:}$.
+  - Minimizes the Mean Squared Error (MSE / least squares) cost function $J(w) = \frac{1}{P} \sum_{p=1}^P (\hat{y}_p - y_p)^2$ using Autograd automatic differentiation.
+  - Supports two optimization backends:
+    - **Gradient Descent**: Iteratively updates parameters in the negative gradient direction with configurable learning rate $\alpha$ and epochs.
+    - **Newton's Method**: Leverages exact Hessian second-order curvature with diagonal regularization ($\epsilon I$) to converge to the optimal solution in a single step.
+  - Provides a Scikit-Learn style interface (`fit`, `predict`) with learned attributes `weights_` and `bias_`.
 
 ---
 
@@ -225,6 +239,32 @@ newton_weights, newton_costs = newtons_method(
 print(f"Newton's Method - Optimal weights: {newton_weights[-1]}, Min cost: {newton_costs[-1]}")
 ```
 
+### Running Linear Regression
+
+```python
+import numpy as np
+from supervised.linear_regression import LinearRegression
+
+# Generate synthetic linear dataset: y = 2.5 * x1 - 1.5 * x2 + 4.0 + noise
+np.random.seed(42)
+X = np.random.randn(100, 2)
+true_weights = np.array([[2.5], [-1.5]])
+true_bias = 4.0
+y = true_bias + np.dot(X, true_weights) + 0.1 * np.random.randn(100, 1)
+
+# 1. Fit using Gradient Descent
+reg_gd = LinearRegression(learning_rate=0.01, epochs=1000, optimizer="gradient")
+reg_gd.fit(X, y)
+predictions_gd = reg_gd.predict(X)
+print(f"Gradient Descent - Bias: {reg_gd.bias_}, Weights: {reg_gd.weights_.flatten()}")
+
+# 2. Fit using Newton's Method
+reg_newton = LinearRegression(optimizer="newton")
+reg_newton.fit(X, y)
+predictions_newton = reg_newton.predict(X)
+print(f"Newton's Method  - Bias: {reg_newton.bias_}, Weights: {reg_newton.weights_.flatten()}")
+```
+
 ---
 
 ## Roadmap / Planned Implementations
@@ -242,7 +282,7 @@ print(f"Newton's Method - Optimal weights: {newton_weights[-1]}, Min cost: {newt
   - [x] Newton's Method
   - [ ] Quasi-Newton Methods (BFGS / L-BFGS)
 - [ ] **Supervised Learning**
-  - [ ] Linear Regression (Analytical & Gradient Descent)
+  - [x] Linear Regression (Gradient Descent & Newton's Method)
   - [ ] Logistic Regression & Softmax Regression
   - [ ] Decision Trees & Random Forests
   - [ ] Support Vector Machines (SVM)
