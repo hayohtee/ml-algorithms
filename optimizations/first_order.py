@@ -14,7 +14,6 @@ from collections.abc import Callable
 
 import numpy as np
 from autograd import grad, value_and_grad
-from autograd.numpy import where
 from numpy.linalg import norm
 
 
