@@ -18,56 +18,46 @@ from numpy.linalg import norm
 
 
 def gradient_descent(
-        fn: Callable[[np.ndarray], np.float64],
-        w: np.ndarray,
-        max_iter: int,
-        alpha: float | None = None,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Minimizes an objective function using gradient descent optimization.
+        fn: Callable[[NDArray[np.float64], ...], np.float64],
+        w: NDArray[np.float64],
+        X: NDArray[np.float64],
+        y: NDArray[np.float64],
+        learning_rate: float = 0.01,
+        epochs: int = 1000,
+) -> NDArray[np.float64]:
+    """Optimizes linear regression parameters using gradient descent.
 
-    At each iteration, computes the gradient of the objective function evaluated at the
-    current parameter vector using automatic differentiation (`autograd.grad`), and updates
-    the parameters by stepping in the opposite direction of the gradient scaled by the learning rate `alpha`.
+    Computes the gradient of the least squares objective function with respect to
+    parameters w using automatic differentiation (`autograd.grad`), and updates
+    w in the negative gradient direction scaled by the learning rate:
+        w_{k+1} = w_k - alpha * grad_w J(w_k)
 
     Args:
-        fn: Objective function to minimize, mapping a weight vector to a scalar value.
-            Must be compatible with `autograd`.
-        w: Initial weight vector (starting point).
-        max_iter: Maximum number of optimization iterations to run.
-        alpha: Step length / learning rate multiplier. If None, uses a diminishing step
-            length rule (setting alpha = 1 / k at iteration k). Defaults to None.
+        fn: The objective function to minimize.
+        w: Initial parameter vector of shape (n_features + 1, 1), containing bias
+            at index 0 and initial feature weights at subsequent indices.
+        X: Feature matrix of shape (n_samples, n_features).
+        y: Target values of shape (n_samples, 1) or (n_samples,).
+        learning_rate: Step size multiplier for gradient updates. Defaults to 0.01.
+        epochs: Maximum number of gradient descent iterations. Defaults to 1000.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]:
-            - weights_history: Array of visited weight vectors at each step (shape: (max_iter + 1, N)).
-            - cost_history: Array of function evaluations at each step (shape: (max_iter + 1,)).
+        NDArray[np.float64]: Optimized parameter vector of shape (n_features + 1, 1).
     """
-    # Compute the gradient function via automatic differentiation
-    gradient = grad(fn)
+    # Create the gradient function via automatic differentiation
+    gradient_func = grad(fn, 0)
 
-    diminishing_steplength = False
-    if alpha is None:
-        diminishing_steplength = True
+    for epoch in range(epochs):
+        # Compute gradients with respect to parameter vector w
+        gradients = gradient_func(w, X, y)
+        # Update parameters in the direction of steepest descent
+        w = w - learning_rate * gradients
 
-    # Record initial position and its corresponding cost
-    weights_history = [w.copy()]
-    cost_history = [fn(w)]
+        if epoch % 10 == 0:
+            current_loss = fn(w, X, y)
+            print(f"Epoch {epoch}: Loss: {current_loss:.4f}")
 
-    for k in range(1, max_iter + 1):
-        if diminishing_steplength:
-            alpha = 1 / k
-
-        # Evaluate the gradient at the current position
-        grad_eval = gradient(w)
-
-        # Step in the direction of steepest descent (negative gradient)
-        w = w - alpha * grad_eval
-
-        # Record updated position and its corresponding cost
-        weights_history.append(w.copy())
-        cost_history.append(fn(w))
-
-    return np.array(weights_history), np.array(cost_history)
+    return w
 
 
 def momentum(
