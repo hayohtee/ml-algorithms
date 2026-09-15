@@ -12,15 +12,15 @@ Classes:
 Functions:
     - model: Computes linear predictions given input features and parameter vector.
     - least_squares: Evaluates the mean squared error (least squares) cost function.
-    - gradient_descent: Fits regression parameters using first-order gradient descent.
-    - newton_method: Fits regression parameters using second-order Newton's method.
 """
-from typing import Optional, Self
+
+from typing import Self
 
 import autograd.numpy as np
 from numpy.typing import NDArray
+
 from optimizations.first_order import gradient_descent
-from optimizations.second_order import newton_method
+from optimizations.second_order import newton
 
 
 class LinearRegression:
@@ -37,19 +37,21 @@ class LinearRegression:
         learning_rate (float): Step size / learning rate for gradient descent.
         epochs (int): Number of optimization iterations.
         optimizer (str): Optimization algorithm used ('gradient' or 'newton').
-        weights_ (Optional[NDArray[np.float64]]): Learned feature weights / coefficients
+        eps (float): Small positive constant added to the Hessian diagonal
+            for numerical stability and invertibility in Newton's method.
+        weights_ (NDArray[np.float64] | None): Learned feature weights / coefficients
             of shape (n_features, 1) after fitting.
-        bias_ (Optional[np.float64]): Learned intercept / bias term after fitting.
-        n_features_in_ (Optional[int]): Number of input features seen during `fit`.
+        bias_ (np.float64 | None): Learned intercept / bias term after fitting.
+        n_features_in_ (int | None): Number of input features seen during `fit`.
     """
 
     def __init__(
-            self,
-            learning_rate: float = 0.01,
-            epochs: int = 1000,
-            optimizer: str = "gradient",
-            eps: float = 1e-8,
-    ):
+        self,
+        learning_rate: float = 0.01,
+        epochs: int = 1000,
+        optimizer: str = "gradient",
+        eps: float = 1e-8,
+    ) -> None:
         """Initializes the LinearRegression model.
 
         Args:
@@ -61,15 +63,15 @@ class LinearRegression:
                 Must be either 'gradient' (Gradient Descent) or 'newton'
                 (Newton's Method). Defaults to 'gradient'.
             eps: Small positive constant added to the Hessian diagonal (regularization/damping)
-            to guarantee invertibility and numerical stability. Defaults to 1e-8.
+                to guarantee invertibility and numerical stability. Defaults to 1e-8.
         """
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.eps = eps
         self.optimizer = optimizer
-        self.weights_: Optional[NDArray[np.float64]] = None
-        self.bias_: Optional[np.float64] = None
-        self.n_features_in_: Optional[int] = None
+        self.weights_: NDArray[np.float64] | None = None
+        self.bias_: np.float64 | None = None
+        self.n_features_in_: int | None = None
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> Self:
         """Fits the linear regression model to training data.
@@ -90,18 +92,25 @@ class LinearRegression:
         Raises:
             ValueError: If `self.optimizer` is not 'gradient' or 'newton'.
         """
-        n_samples, n_features = X.shape
+        n_features = X.shape[1]
         self.n_features_in_ = n_features
 
         w = np.random.rand(n_features + 1, 1)
 
         match self.optimizer:
             case "gradient":
-                w = gradient_descent(least_squares, w, X, y)
+                w = gradient_descent(
+                    least_squares,
+                    w,
+                    X,
+                    y,
+                    epochs=self.epochs,
+                    learning_rate=self.learning_rate,
+                )
                 self.weights_ = w[1:]
                 self.bias_ = w[0]
             case "newton":
-                w = newton_method(least_squares, w, X, y, eps=self.eps)
+                w = newton(least_squares, w, X, y, epochs=1, eps=self.eps)
                 self.weights_ = w[1:]
                 self.bias_ = w[0]
             case _:
@@ -131,7 +140,7 @@ class LinearRegression:
         return model(X, np.array([self.bias_, self.weights_.flatten()]))
 
 
-def model(X: NDArray[np.float64], w: NDArray[np.float64]):
+def model(X: NDArray[np.float64], w: NDArray[np.float64]) -> NDArray[np.float64]:
     """Computes linear model predictions given inputs and a parameter vector.
 
     Evaluates the affine transformation:
@@ -150,10 +159,10 @@ def model(X: NDArray[np.float64], w: NDArray[np.float64]):
 
 
 def least_squares(
-        w: NDArray[np.float64],
-        X: NDArray[np.float64],
-        y: NDArray[np.float64]
-) -> float:
+    w: NDArray[np.float64], 
+    X: NDArray[np.float64], 
+    y: NDArray[np.float64],
+) -> np.float64:
     """Computes the Mean Squared Error (least squares) loss.
 
     The cost function measures average squared deviation between model predictions
@@ -166,7 +175,8 @@ def least_squares(
         y: Target values array of shape (n_samples, 1) or (n_samples,).
 
     Returns:
-        float: The mean squared error loss value.
+        np.float64: The mean squared error loss value.
     """
     cost = np.sum((model(X, w) - y) ** 2)
     return cost / np.float64(y.size)
+
