@@ -83,7 +83,7 @@ Implemented in [`supervised/logistic_regression.py`](supervised/logistic_regress
   - Models the probability of binary classes via the logistic sigmoid activation: $p(y = 1 \mid X) = \sigma(w_0 + X w_{1:}) = \frac{1}{1 + e^{-(w_0 + X w_{1:})}}$.
   - Supports two standard label encoding schemes:
     - **$\{0, 1\}$ Labels**: Minimized using Binary Cross-Entropy loss: $J(w) = -\frac{1}{P} \sum_{p=1}^P [y_p \log(a_p) + (1 - y_p) \log(1 - a_p)]$.
-    - **$\{-1, 1\}$ Labels**: Minimized using Softmax (logistic) loss: $J(w) = \frac{1}{P} \sum_{p=1}^P \log(1 + e^{-y_p (w_0 + x_p^\top w_{1:])})$.
+    - **$\{-1, 1\}$ Labels**: Minimized using Softmax (logistic) loss: $J(w) = \frac{1}{P} \sum_{p=1}^P \log(1 + e^{-y_p (w_0 + x_p^\top w_{[1:]})})$.
   - Supports two optimization backends:
     - **Gradient Descent**: Iteratively optimizes weights and bias via gradient updates with configurable `learning_rate` and `epochs`.
     - **Newton's Method**: Uses second-order regularized Hessian solves across epochs for fast local quadratic convergence.
